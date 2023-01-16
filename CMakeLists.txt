@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.20)
 project(muduo)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 14)
+include_directories(src)
+aux_source_directory(src SRC_DIR)
 
-add_executable(muduo main.cpp CountDownLatch.h noncopyable.h MutexLock.h Condition.h Thread.h Thread.cpp ThreadPool.h ThreadPool.cpp Channel.h Channel.cpp Poller.h Poller.cpp EventLoop.h EventLoop.cpp TimeStamp.h Timer.h TimerId.h TimerQueue.h TimerQueue.cpp Timerfd.cpp Timerfd.h)
+add_executable(muduo ${SRC_DIR})
