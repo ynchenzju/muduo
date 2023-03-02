@@ -17,6 +17,33 @@
 //    loop_->queueInLoop(std::bind(&TcpConnection::connectDestroyed, conn));
 //}
 
+void defaultConnectionCallback(const TcpConnectionPtr& conn) {
+//    LOG_TRACE << conn->localAddress().toIpPort() << " -> "
+//              << conn->peerAddress().toIpPort() << " is "
+//              << (conn->connected() ? "UP" : "DOWN");
+    // do not call conn->forceClose(), because some users want to register message callback only.
+}
+
+void defaultMessageCallback(const TcpConnectionPtr&, Buffer* buf, Timestamp) {
+    buf->retrieveAll();
+}
+
+TcpServer::TcpServer(EventLoop* loop,
+                     const InetAddress& listenAddr,
+                     const std::string& nameArg,
+                     Option option)
+        : loop_(loop),
+          ipPort_(listenAddr.toIpPort()),
+          name_(nameArg),
+          acceptor_(new Acceptor(loop, listenAddr, option == kReusePort)),
+          threadPool_(new EventLoopThreadPool(loop, name_)),
+          connectionCallback_(defaultConnectionCallback),
+          messageCallback_(defaultMessageCallback),
+          nextConnId_(1), started_(ATOMIC_FLAG_INIT) {
+    acceptor_->setNewConnectionCallback(
+            std::bind(&TcpServer::newConnection, this, std::placeholders::_1, std::placeholders::_2));
+}
+
 void TcpServer::newConnection(int sockfd, const InetAddress &peerAddr) {
     loop_->assertInLoopThread();
     char buf[32];
@@ -49,8 +76,7 @@ void TcpServer::removeConnectionInLoop(const TcpConnectionPtr &conn) {
     ioLoop->queueInLoop(std::bind(&TcpConnection::connectDestroyed, conn));
 }
 
-void TcpServer::setThreadNum(int numThreads)
-{
+void TcpServer::setThreadNum(int numThreads) {
     assert(0 <= numThreads);
     threadPool_->setThreadNum(numThreads);
 }
@@ -66,5 +92,13 @@ TcpServer::~TcpServer()
         item.second.reset();
         conn->getLoop()->runInLoop(
                 std::bind(&TcpConnection::connectDestroyed, conn));
+    }
+}
+
+void TcpServer::start() {
+    if (!started_.test_and_set()) {
+        threadPool_->start(threadInitCallback_);
+        assert(!acceptor_->listening());
+        loop_->runInLoop(std::bind(&Acceptor::listen, acceptor_.get()));
     }
 }

@@ -1,13 +1,14 @@
 //
 // Created by Yunan Chen on 2023/1/4.
 //
-#include "../include/EventLoop.h"
-#include "../include/Channel.h"
+#include "EventLoop.h"
+#include "Channel.h"
 #include "unistd.h"
-#include "../include/TimerQueue.h"
+#include "TimerQueue.h"
 #include <cassert>
 #include <sys/eventfd.h>
 #include <signal.h>
+#include <iostream>
 
 thread_local EventLoop* t_loopInThisThread = 0;
 const int kPollTimeMs = 10000;
@@ -23,17 +24,17 @@ public:
 };
 IgnoreSigPipe initObj;
 
-int createEventfd()
-{
+int createEventfd() {
     int evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if (evtfd < 0) {
+        std::cout << evtfd << std::endl;
         abort();
     }
     return evtfd;
 }
 
 EventLoop::EventLoop() :looping_(false), threadId_(std::this_thread::get_id()), timerQueue_(new TimerQueue(this)),
-    wakeupFd_(createEventfd()), wakeupChannel_(new Channel(this, wakeupFd_)) {
+    wakeupFd_(createEventfd()), wakeupChannel_(new Channel(this, wakeupFd_)), poller_(new Poller(this)) {
     if (t_loopInThisThread) {
 
     } else {
@@ -152,6 +153,8 @@ TimerId EventLoop::runEvery(double interval, TimerCallback cb) {
 
 void EventLoop::abortNotInLoopThread()
 {
+    std::cout << "abort not in loop thread" << std::endl;
+    abort();
 //    LOG_FATAL << "EventLoop::abortNotInLoopThread - EventLoop " << this
 //              << " was created in threadId_ = " << threadId_
 //              << ", current thread id = " <<  CurrentThread::tid();

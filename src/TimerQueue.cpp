@@ -1,16 +1,15 @@
 //
 // Created by Yunan Chen on 2023/1/11.
 //
-#include "../include/TimerQueue.h"
-#include "../include/EventLoop.h"
-#include "../include/Timer.h"
-#include "../include/TimerId.h"
-#include "../include/Channel.h"
+#include "TimerQueue.h"
+#include "EventLoop.h"
+#include "Timer.h"
+#include "TimerId.h"
 #include <sys/timerfd.h>
 #include <cassert>
 #include <string.h>
 #include <unistd.h>
-#define UINTPTR_MAX  18446744073709551615UL
+#define UINTPTR_MAX 18446744073709551615UL
 
 int createTimerfd()
 {
@@ -103,7 +102,7 @@ void TimerQueue::cancelInLoop(TimerId timerId) {
     loop_->assertInLoopThread();
     assert(timers_.size() == activeTimers_.size());
     ActiveTimer timer(timerId.timer_, timerId.sequence_);
-    ActiveTimerSet ::iterator it = activeTimers_.find(timer);
+    ActiveTimerSet::iterator it = activeTimers_.find(timer);
     if (it != activeTimers_.end()) {
         size_t n = timers_.erase(Entry(it->first->expiration(), it->first));
         assert(n == 1); (void)n;
@@ -124,8 +123,7 @@ void readTimerfd(int timerfd, Timestamp now)
     uint64_t howmany;
     ssize_t n = ::read(timerfd, &howmany, sizeof howmany);
 //    LOG_TRACE << "TimerQueue::handleRead() " << howmany << " at " << now.toString();
-    if (n != sizeof howmany)
-    {
+    if (n != sizeof howmany) {
 //        LOG_ERROR << "TimerQueue::handleRead() reads " << n << " bytes instead of 8";
     }
 }

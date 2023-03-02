@@ -3,10 +3,9 @@
 //
 
 
-#include "../include/TimeStamp.h"
+#include "TimeStamp.h"
 
-Timestamp Timestamp::now()
-{
+Timestamp Timestamp::now() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   int64_t seconds = tv.tv_sec;

@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <atomic>
 
 class EventLoop;
 class InetAddress;
@@ -29,7 +30,16 @@ typedef std::map<std::string, TcpConnectionPtr> ConnectionMap;
 
 class TcpServer: noncopyable {
 public:
+    typedef std::function<void(EventLoop*)> ThreadInitCallback;
+    enum Option {
+        kNoReusePort,
+        kReusePort,
+    };
     TcpServer(EventLoop* loop, const InetAddress& listenAddr);
+    TcpServer(EventLoop* loop,
+              const InetAddress& listenAddr,
+              const std::string& nameArg,
+              Option option = kNoReusePort);
     ~TcpServer();
     void setThreadNum(int numThreads);
     void start();
@@ -41,6 +51,9 @@ public:
         messageCallback_ = cb;
     }
 
+    void setThreadInitCallback(const ThreadInitCallback& cb)
+    { threadInitCallback_ = cb; }
+
     void removeConnection(const TcpConnectionPtr& conn);
 
     const std::string& name() const { return name_; }
@@ -51,13 +64,17 @@ private:
     EventLoop* loop_;
     const std::string name_;
     std::unique_ptr<Acceptor> acceptor_;
-    bool started_;
+//    bool started_;
+//    std::atomic<bool> started_;
+    std::atomic_flag started_;
     int nextConnId_;
     std::unique_ptr<EventLoopThreadPool> threadPool_;
 
     ConnectionCallback  connectionCallback_;
     MessageCallback messageCallback_;
+    ThreadInitCallback threadInitCallback_;
     ConnectionMap  connections_;
+    const std::string ipPort_;
 };
 
 #endif //MUDUO_TCPSERVER_H

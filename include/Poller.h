@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include "noncopyable.h"
 #include <sys/poll.h>
 
@@ -28,13 +29,16 @@ public:
     void removeChannel(Channel* channel);
 
     void assertInLoopThread();
+
 private:
     void fillActiveChannels(int numEvents, ChannelList* activeChannels) const;
     typedef std::vector<struct pollfd> PollFdList;
     typedef std::map<int, Channel*> ChannelMap;
     EventLoop* ownerLoop_;
     PollFdList pollfds_;
-    ChannelMap channels_;
+//    ChannelMap channels_;
+    std::map<int, Channel*> channels_;
+
 };
 
 #endif //THREADPOOL_POLLER_H
